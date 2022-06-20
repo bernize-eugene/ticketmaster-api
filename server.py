@@ -14,7 +14,7 @@ app.secret_key = 'SECRETSECRETSECRET'
 app.config['PRESERVE_CONTEXT_ON_EXCEPTION'] = True
 
 
-API_KEY = os.environ['zALqOphQAjLx8TpVb8ZHxLuJOKtF8JMT']
+API_KEY = os.environ['TICKETMASTER_KEY']
 
 
 @app.route('/')
@@ -42,22 +42,22 @@ def find_afterparties():
     sort = request.args.get('sort', '')
 
     url = 'https://app.ticketmaster.com/discovery/v2/events'
-    payload = {'apikey': API_KEY}
+    payload = {
+        'apikey':   API_KEY,
+        'postalCode':   postalcode,
+        'keyword':   keyword,
+        'radius':   radius,
+        'unit':   unit,
+        'sort':   sort,
+    }
 
-    # TODO: Make a request to the Event Search endpoint to search for events
-    #
-    # - Use form data from the user to populate any search parameters
-    #
-    # - Make sure to save the JSON data from the response to the `data`
-    #   variable so that it can display on the page. This is useful for
-    #   debugging purposes!
-    #
-    # - Replace the empty list in `events` with the list of events from your
-    #   search results
+    response = requests.get(url, params=payload)
+    data = response.json()
 
-    data = {'Test': ['This is just some test data'],
-            'page': {'totalElements': 1}}
-    events = []
+    if '_embedded' in data:
+        events = data['_embedded']['events']
+    else:
+        events = []
 
     return render_template('search-results.html',
                            pformat=pformat,
@@ -74,9 +74,21 @@ def find_afterparties():
 def get_event_details(id):
     """View the details of an event."""
 
-    # TODO: Finish implementing this view function
+    url = f'https://app.ticketmaster.com/discovery/v2/events/{id}'
+    payload = {'apikey':   API_KEY}
 
-    return render_template('event-details.html')
+    response = requests.get(url, params=payload)
+    event = response.json()
+
+    if '_embedded' in event:
+        venues = event['_embedded']['venues']
+
+    else:
+        venues = []
+
+    return render_template('event-details.html',
+                           event=event,
+                           venues=venues)
 
 
 if __name__ == '__main__':
